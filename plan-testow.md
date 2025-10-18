@@ -15,6 +15,9 @@ Przedmiotem Testów jest projekt https://github.com/KSIUJ/gutenberg
 - Podejście do testowania: 
   - **Testy manualne:** przejście przez ścieżki użytkownika - funkcjonalne, niefunkcjonalne i regresji
   - **Testy automatcyzne:** jednostkowe i e2e
+ 
+Ponadto, w ramach przeprowadzania testów, będziemy zbierać opinię użytkowników, dzięki temu będziemy lepiej wiedzieć, na których aspektach/funkcjonalnościach się skupić. (też będą testerami manualnymi:))
+
 4) Środowisko Testowe (Konfiguracja sprzętowa i programowa)
 //todo
 5) Harmonogram i Zasoby (Kto, kiedy, ile czasu)
