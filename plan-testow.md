@@ -9,7 +9,7 @@ Przedmiotem Testów jest projekt https://github.com/KSIUJ/gutenberg
 - Rodzaje testów:
   - **Testy funkcjonalne:** Weryfikacja, czy każda funkcja działa zgodnie z oczekiwaniami.
   - **Testy niefunkcjonalne:** Testy użyteczności (czy stronka jest intuicyjna i łatwa w obsłudze) oraz wydajności (czy czas ładowania jest akceptowalny)
-  - **Testy regresji:** Sprawdzenie, czy nowa wersja spełnia rozszerza starą, bez ucięcia istniejących funkcjonalności.
+  - **Testy regresji:** Sprawdzenie, czy nowa wersja rozszerza starą, bez ucięcia istniejących funkcjonalności.
   - **Testy jednostkowe.**
   - **Testy E2E.**
 - Podejście do testowania: 
