@@ -4,7 +4,9 @@ Przedmiotem Testów jest projekt https://github.com/KSIUJ/gutenberg
 1) Zakres Testów
    
 Ze względu na wielkość projektu oraz dbałość o jakość kodu się pokryć testami wszystkie istniejące funkcjonalności *(eg. w kolorze, rozne typy plikow, konkretne strony, ilości kopii, podgląd, łączenie z inną drukarką, ...)*
-z testów jednostkowych w szczególności chcemy się skupić na funkcjonalnościach opisanych w https://github.com/KSIUJ/gutenberg/issues/123
+Z testów jednostkowych w szczególności chcemy się skupić na funkcjonalnościach opisanych w https://github.com/KSIUJ/gutenberg/issues/123
+
+Skupimy się takżę w znacznym stopniu na kodzie w którym już są defekty oraz na funkcjonalnościach, które według badania środowiskowego zostaną uznane za krytyczne.
 
 2) Strategia Testowania 
 - Rodzaje testów:
@@ -19,26 +21,23 @@ z testów jednostkowych w szczególności chcemy się skupić na funkcjonalnośc
 Ponadto, w ramach przeprowadzania testów, będziemy zbierać opinię użytkowników, dzięki temu będziemy lepiej wiedzieć, na których aspektach/funkcjonalnościach się skupić. (też będą testerami manualnymi:))
 
 3) Środowisko Testowe (Konfiguracja sprzętowa i programowa)
-- pytest
+- python - pytest
 - wirtualna drukarka (cups pdf)
+- GitHub
 
 5) Kryteria Wejścia/Wyjścia
 - wejścia:
-  - Dominik zrobi nam tutorial obsługi wirtualnej drukarki i stawiania tego lokalnie *alternatywnie* nowa wersja guthenberga wyjdzie i nie będziemy musieli tego stawiać lokalnie, wtedy tylko wirtualna drukarka
+  - Dominik zrobi nam tutorial obsługi wirtualnej drukarki i stawiania tego lokalnie *alternatywnie* nowa wersja Gutenberga wyjdzie i nie będziemy musieli tego stawiać lokalnie, wtedy tylko wirtualna drukarka
 - wyjścia:
   - wszystko działa bez zarzutów:)
 
 6) Zarządzanie Defektami oraz Raportowanie Postępu i Wyników
-- Do repozytorium projektu dodamy plan testów - a także *issues* dla każdego z przeprowadzanych testów, po przeprowadzeniu każdego z nich będziemy:
-  - Zamykać issue - Jeśli test działa
-  - Utworzenie issue z bugiem - Jeśli jest bug
+Do repozytorium projektu dodamy plan testów - a także *issues* dla każdej z partii przeprowadzanych testów, po przeprowadzeniu będziemy zamykać issue testu a następnie, jeśli test nie przechodzi stworzymy nowe issue z bugiem
   
 6) Analiza ryzyk
 
-Główną uwagę skupimy na kodzie w którym już są defekty oraz na funkcjonalnościach, które według badania środowiskowego zostaną uznane za krytyczne.
-
-Ryzyka:
-- drukarka losowo przestanie działać
+- skill issue nasze
+- lenistwo testerów
 
 7) Harmonogram
 
