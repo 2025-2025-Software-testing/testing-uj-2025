@@ -1,9 +1,9 @@
 # testing-uj-2025
 2025-10-10 - Przedstawienie aplikacji open source i sposobów komunikacji z twórcami - [plik](testowana_aplikacja.md)
 
-2025-10-24 - Plan testów (Markdown + git), przedstawienie analizy ryzyk - [plik](plan-testow.md)
+2025-11-07 - Plan testów (Markdown + git), przedstawienie analizy ryzyk - [plik](plan-testow.md)
 
-RRRR-MM-DD - Przypadki testowe (Markdown) - // todo
+2025-11-14 - Przypadki testowe (Markdown) -  [plik](przypadki-testowe.md)
 
 RRRR-MM-DD - Przedstawienie wyników testów i zaraportowanych defektów (Markdown + issues) - // todo
 
