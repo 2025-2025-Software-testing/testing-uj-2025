@@ -25,7 +25,7 @@ Główną uwagę skupimy na kodzie w którym już są defekty oraz na funkcjonal
 
 4) Kryteria Wejścia/Wyjścia
 - wejścia:
-  - Dominik zrobi nam tutorial obsługi wirtualnej drukarki i stawiania tego lokalnie *alternatywnie* nowa wersja Gutenberga wyjdzie i nie będziemy musieli tego stawiać lokalnie, wtedy tylko wirtualna drukarka
+  -  ~~Dominik zrobi nam tutorial obsługi wirtualnej drukarki i stawiania tego lokalnie~~ *alternatywnie* nowa wersja Gutenberga wyjdzie i nie będziemy musieli tego stawiać lokalnie, wtedy tylko wirtualna drukarka (w międzyczasie wyszedł gutenberg)
 - wyjścia:
   - wszystkie testy manualne zostaną przeprowadzone przynajmniej raz
   - testy jednostkowe i e2e zostaną napisane
@@ -37,6 +37,8 @@ Do repozytorium projektu dodamy plan testów - a także *issues* dla każdej z p
 
 - skill issue nasze
 - lenistwo testerów
+- dodanie automatycznych testów może wymagać znacznych refactorów kodu
+- niektóre testy mogą utrudnić przyszłe modyfikacje
 
 7) Harmonogram
 
@@ -47,3 +49,5 @@ Do repozytorium projektu dodamy plan testów - a także *issues* dla każdej z p
 * Testy jednostkowe
 * Testy E2E
 * Testy eksploracyjne
+
+*jesli umiejętności pozwolą chcemy dodać także code coverage przy automatycznych testach*
