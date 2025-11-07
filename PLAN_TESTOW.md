@@ -47,7 +47,7 @@ Zakres nie obejmuje: testów instalacyjnych całego środowiska (o ile będzie u
 
 ### 4.1 Typy testów do wykonania
 - **Testy funkcjonalne:** Sprawdzenie poprawności działania określonych funkcji (proces drukowania, zarządzanie użytkownikami, API)
-- **Testy niefunkcjonalne:** Wydajność (czas odpowiedzi, obsługa wielu żądań), użyteczność API, odporność na błędy wejścia
+- **Testy niefunkcjonalne:** Wydajność (czas odpowiedzi, obsługa wielu żądań), użyteczność API, odporność na defekty wejścia
 - **Testy regresji:** Porównanie najnowszej wersji ze starszą wersją Gutenberga.
 
 ### 4.2 Poziomy testów
