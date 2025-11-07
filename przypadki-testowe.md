@@ -1,10 +1,10 @@
 <h1 align="center">Przypadki Testowe: gutenberg</h1>
 
-# 1. Drukowanie czarno białe, pojedyńczego dokumentu
+# 1. Drukowanie - różne konfiguracje ustawień drukowania (ilosc, przedzialy, jedno/dwustronne, w kolorze) 
 
 ## Happy Path
 
-### TC1.1
+### TC1.1 czarno białe, pojedyńczego dokumentu
 
 - **Stan początkowy:**  
   Uzytkownik ma internet, gutenberg jest połączony z _KSI_ drukarką.
@@ -29,7 +29,7 @@
 
 W scenariuszach alternatywnych jedyną róznica jest krok 3., pozostałe kroki oraz stany bez zmian
 
-### TC1.2 - niezerowa ilość kopii
+### TC1.2 - > 1 ilość kopii
 
 - **Kroki testowe:** 3. Uzytkownik wybiera:
   - drukuj bez koloru
