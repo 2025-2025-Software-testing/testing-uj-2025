@@ -29,7 +29,7 @@
 
 W scenariuszach alternatywnych jedyną róznica jest krok 3., pozostałe kroki oraz stany bez zmian
 
-### TC1.2
+### TC1.2 - niezerowa ilość kopii
 
 - **Kroki testowe:** 3. Uzytkownik wybiera:
   - drukuj bez koloru
@@ -56,13 +56,26 @@ W scenariuszach alternatywnych jedyną róznica jest krok 3., pozostałe kroki o
 ---
 
 ### TC1.4 - przedziały bez sensu
-
 - **Kroki testowe:** 3. Uzytkownik wybiera:
   - drukuj bez koloru
   - jedną kopię
   - przedział stron dokumentu np; 1-3, 5, 13-22(gdzie max nr strony podany w przedziale > od długości dokumentu)
 - **Oczekiwany rezultat:**  
-  Uzytkownik otrzymuje wydrukowane kartki w wybranej konfiguracji, do
+  Uzytkownik otrzymuje wydrukowane kartki w wybranej konfiguracji, gdzie ostatni przedzial drukuje (a,min(len,b))
+- **Rzeczywisty rezultat:** _todo_
+- **Rezultat testu:** _todo_
+
+---
+
+### TC1.5 - drukowanie w kolorze
+- **Stan początkowy:**  
+  Uzytkownik ma internet, gutenberg jest połączony z _KSI_ drukarką. **Ponadto** posiada konto z pozwoleniem na drukowanie w kolorze.
+- **Kroki testowe:** 3. Uzytkownik wybiera:
+  - drukuj bez koloru
+  - jedną kopię
+  - przedział stron dokumentu np; 1-3, 5, 13-22(gdzie max nr strony podany w przedziale > od długości dokumentu)
+- **Oczekiwany rezultat:**  
+  Uzytkownik otrzymuje wydrukowane kartki w wybranej konfiguracji, gdzie ostatni przedzial drukuje (a,min(len,b))
 - **Rzeczywisty rezultat:** _todo_
 - **Rezultat testu:** _todo_
 
