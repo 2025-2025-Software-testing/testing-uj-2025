@@ -115,7 +115,7 @@ Patrz `dokumentacja/analiza_ryzyk.md`.
 ## 9. Metryki i raportowanie
 
 - **Metryki:**
-  - Ilość wykonanych test cases / zaplanowane
+  - Liczba wykonanych test cases / zaplanowane
   - Liczba wykrytych i zamkniętych defektów (wg typu/krytyczności)
   - Code coverage (% pokrycia testami automatycznymi kodu źródłowego)
   - Czas trwania poszczególnych etapów testowych
