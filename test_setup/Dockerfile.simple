@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     git \
     vim \
     netcat-traditional \
+    sudo \
     # CUPS para impresión
     cups \
     cups-client \
@@ -23,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     imagemagick \
     ghostscript \
     bubblewrap \
-    # Node.js y npm
+    # Node.js y npm (solo para backend, no construimos webapp)
     nodejs \
     npm \
     # Dependencias de Python
@@ -31,9 +32,6 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
-
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
 
 # Instalar uv (gestor de paquetes Python)
 RUN pip3 install --break-system-packages uv
@@ -57,25 +55,14 @@ ARG GUTENBERG_GID=659
 
 RUN groupadd --system --gid ${GUTENBERG_GID} ${GUTENBERG_USERNAME} && \
     useradd --system --uid ${GUTENBERG_UID} --gid ${GUTENBERG_GID} \
-    --groups lp,lpadmin --home-dir /app ${GUTENBERG_USERNAME} || true
+    --home-dir /app ${GUTENBERG_USERNAME} && \
+    echo "${GUTENBERG_USERNAME} ALL=(ALL) NOPASSWD: /usr/sbin/cupsd" >> /etc/sudoers
 
 # Instalar dependencias de Python
 RUN uv sync
 
 # Copiar configuración de ejemplo
 RUN cp gutenberg/settings/docker_settings.py.example gutenberg/settings/docker_settings.py
-
-# Configurar la webapp
-WORKDIR /app/webapp
-
-# Instalar dependencias con frozen-lockfile y sin scripts opcionales
-RUN pnpm install --frozen-lockfile --ignore-scripts || true
-
-# Ejecutar prepare manualmente (puede fallar, pero seguimos adelante)
-RUN pnpm run prepare || echo "Prepare falló, continuando..."
-
-# Construir la webapp (esto es lo importante)
-RUN pnpm run build || echo "Build de webapp falló, se usará modo desarrollo"
 
 # Cambiar propiedad de archivos
 RUN chown -R ${GUTENBERG_USERNAME}:${GUTENBERG_USERNAME} /app
@@ -84,8 +71,20 @@ RUN chown -R ${GUTENBERG_USERNAME}:${GUTENBERG_USERNAME} /app
 WORKDIR /app/backend
 
 # Configurar CUPS
-RUN mkdir -p /var/run/cups && \
-    chmod 755 /var/run/cups
+RUN mkdir -p /var/run/cups /var/spool/cups /etc/cups && \
+    chmod 755 /var/run/cups /var/spool/cups && \
+    chown -R ${GUTENBERG_USERNAME}:${GUTENBERG_USERNAME} /var/run/cups /var/spool/cups /etc/cups
+
+# Configurar CUPS para permitir acceso local sin autenticación
+RUN echo "# Permitir acceso local sin autenticación" > /etc/cups/cupsd.conf && \
+    echo "<Location />" >> /etc/cups/cupsd.conf && \
+    echo "  Order allow,deny" >> /etc/cups/cupsd.conf && \
+    echo "  Allow localhost" >> /etc/cups/cupsd.conf && \
+    echo "</Location>" >> /etc/cups/cupsd.conf && \
+    echo "<Location /admin>" >> /etc/cups/cupsd.conf && \
+    echo "  Order allow,deny" >> /etc/cups/cupsd.conf && \
+    echo "  Allow localhost" >> /etc/cups/cupsd.conf && \
+    echo "</Location>" >> /etc/cups/cupsd.conf
 
 # Exponer puertos
 EXPOSE 8000 631

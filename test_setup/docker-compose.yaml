@@ -1,114 +1,119 @@
 services:
-  # Servidor web Django + uWSGI
-  web:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: gutenberg-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gutenberg
+      - POSTGRES_USER=gutenberg
+      - POSTGRES_PASSWORD=gutenberg_change_me_in_production
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gutenberg"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis para Celery
+  redis:
+    image: redis:7-alpine
+    container_name: gutenberg-redis
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Servidor Django backend
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: gutenberg_web
+      dockerfile: Dockerfile.simple
+      args:
+        GUTENBERG_USERNAME: gutenberg-docker
+        GUTENBERG_UID: 659
+        GUTENBERG_GID: 659
+    container_name: gutenberg-backend
     ports:
-      - "11111:11111"
-      - "631:631"  # Puerto CUPS para administración
+      - "8000:8000"
+      - "631:631"
     volumes:
-      - ./backend/production_settings.py:/app/backend/production_settings.py
+      - ./backend/gutenberg/settings/docker_settings.py:/app/backend/gutenberg/settings/docker_settings.py
       - ./data/media:/app/media
       - ./data/static:/app/static
-      - /var/run/cups:/var/run/cups
-      - /etc/cups:/etc/cups
+      - cups_data:/var/run/cups
     environment:
-      - GUTENBERG_ENV=production
-      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
+      - GUTENBERG_ENV=docker
+      - DJANGO_SETTINGS_MODULE=gutenberg.settings.docker_settings
+      - POSTGRES_PASSWORD=gutenberg_change_me_in_production
+      - DJANGO_SECRET_KEY=change-this-to-a-random-secret-key-in-production
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - gutenberg_network
     restart: unless-stopped
     command: web
 
   # Worker de Celery
-  celery_worker:
+  celery:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: gutenberg_celery_worker
+      dockerfile: Dockerfile.simple
+      args:
+        GUTENBERG_USERNAME: gutenberg-docker
+        GUTENBERG_UID: 659
+        GUTENBERG_GID: 659
+    container_name: gutenberg-celery
     volumes:
-      - ./backend/production_settings.py:/app/backend/production_settings.py
+      - ./backend/gutenberg/settings/docker_settings.py:/app/backend/gutenberg/settings/docker_settings.py
       - ./data/media:/app/media
-      - /var/run/cups:/var/run/cups
-      - /etc/cups:/etc/cups
+      - cups_data:/var/run/cups
     environment:
-      - GUTENBERG_ENV=production
-      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
+      - GUTENBERG_ENV=docker
+      - DJANGO_SETTINGS_MODULE=gutenberg.settings.docker_settings
+      - POSTGRES_PASSWORD=gutenberg_change_me_in_production
+      - DJANGO_SECRET_KEY=change-this-to-a-random-secret-key-in-production
     depends_on:
-      - db
-      - redis
-      - web
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     networks:
       - gutenberg_network
     restart: unless-stopped
     command: celery
 
-  # Celery Beat (tareas programadas)
-  celery_beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: gutenberg_celery_beat
-    volumes:
-      - ./backend/production_settings.py:/app/backend/production_settings.py
-    environment:
-      - GUTENBERG_ENV=production
-      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
-    depends_on:
-      - db
-      - redis
-      - web
-    networks:
-      - gutenberg_network
-    restart: unless-stopped
-    command: beat
-
-  # Base de datos PostgreSQL
-  db:
-    image: postgres:15-alpine
-    container_name: gutenberg_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=gutenberg
-      - POSTGRES_USER=gutenberg
-      - POSTGRES_PASSWORD=gutenberg_password_change_me
-    networks:
-      - gutenberg_network
-    restart: unless-stopped
-
-  # Redis para Celery
-  redis:
-    image: redis:7-alpine
-    container_name: gutenberg_redis
-    networks:
-      - gutenberg_network
-    restart: unless-stopped
-
-  # Nginx (opcional, para producción)
-  nginx:
+  # Nginx proxy
+  proxy:
     image: nginx:alpine
-    container_name: gutenberg_nginx
+    container_name: gutenberg-proxy
     ports:
-      - "80:80"
-      - "443:443"
+      - "3000:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./data/static:/var/www/static:ro
       - ./data/media:/var/www/media:ro
     depends_on:
-      - web
+      - backend
     networks:
       - gutenberg_network
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  cups_data:
 
 networks:
   gutenberg_network:

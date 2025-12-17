@@ -1,267 +1,413 @@
-# Gutenberg con Docker
+# Gutenberg con Docker - Configuración Local
 
-Este conjunto de archivos automatiza la instalación y configuración de Gutenberg con soporte completo para impresión.
+Esta configuración automatiza la instalación y despliegue de Gutenberg con soporte completo para impresión usando Docker Compose V2.
 
 ## Archivos incluidos
 
-- **Dockerfile**: Imagen base con todas las dependencias
+- **Dockerfile**: Imagen base con todas las dependencias + build de webapp
+- **Dockerfile.simple**: Imagen más simple sin build de webapp (recomendado para empezar)
 - **docker-compose.yaml**: Orquestación de servicios (Docker Compose V2)
 - **docker-entrypoint.sh**: Script de inicialización
-- **nginx.conf**: Configuración de Nginx para producción
+- **nginx.conf**: Configuración de Nginx
 
 ## Requisitos previos
 
-- Docker Engine 20.10+
-- Docker Compose V2 (plugin integrado en Docker)
+- Docker Engine 20.10+ con Docker Compose V2
+- **No se necesita configurar nada en el sistema host**
 
-**Nota**: Este proyecto usa Docker Compose V2 (sin la clave `version:` en el archivo YAML). Si tienes Docker Desktop o Docker Engine reciente, ya incluye Compose V2.
-
-## Instalación rápida
-
-1. **Verificar Docker Compose V2:**
-
+**Verificar Docker Compose V2:**
 ```bash
-# Debe mostrar "Docker Compose version v2.x.x"
 docker compose version
+# Debe mostrar: Docker Compose version v2.x.x
 ```
 
-2. **Crear la estructura de directorios:**
+## Dos opciones de instalación
+
+### Opción A: Dockerfile simple (recomendado para empezar)
+
+Usa `Dockerfile.simple` que no construye la webapp, solo el backend:
+
+```bash
+# En docker-compose.yaml, cambiar:
+# dockerfile: Dockerfile
+# por:
+# dockerfile: Dockerfile.simple
+```
+
+### Opción B: Dockerfile completo
+
+Usa `Dockerfile` que intenta construir la webapp (puede tener problemas con binarios nativos).
+
+## Instalación paso a paso
+
+### 1. Crear estructura de directorios
 
 ```bash
 mkdir gutenberg-docker
 cd gutenberg-docker
+
+# Crear directorios necesarios
+mkdir -p data/media data/static secrets backend/gutenberg/settings
 ```
 
-3. **Guardar los archivos:**
-   - Dockerfile
-   - docker-compose.yaml
-   - docker-entrypoint.sh
-   - nginx.conf
+### 2. Guardar los archivos de configuración
 
-4. **Configurar la aplicación:**
+Guarda estos archivos en `gutenberg-docker/`:
+- `Dockerfile` (con build de webapp)
+- `Dockerfile.simple` (sin build de webapp - recomendado)
+- `docker-compose.yaml`
+- `docker-entrypoint.sh`
+- `nginx.conf`
 
-```bash
-# Crear directorios para datos
-mkdir -p data/media data/static
+### 3. Generar secretos
 
-# Copiar el archivo de configuración
-docker compose run --rm web bash -c "cd /app/backend && cp production_settings.py.example production_settings.py"
+**Ya no es necesario** - ahora usa variables de entorno directamente. Las contraseñas están hardcoded en docker-compose.yaml para desarrollo local.
 
-# Editar la configuración
-nano backend/production_settings.py
+**Para producción**, cámbialas editando las variables de entorno en `docker-compose.yaml`:
+```yaml
+environment:
+  - POSTGRES_PASSWORD=tu_password_segura_aqui
+  - DJANGO_SECRET_KEY=tu_clave_secreta_aqui
 ```
 
-5. **Iniciar los servicios:**
+O crea un archivo `.env` (opcional):
+```bash
+cp .env.example .env
+nano .env  # Edita las contraseñas
+```
+
+### 4. Crear usuario del sistema (para CUPS)
+
+**Ya no es necesario** - CUPS se ejecuta completamente dentro del contenedor Docker.
+
+### 5. Construir e iniciar servicios
 
 ```bash
-# Construir las imágenes
+# Construir imágenes (usa Dockerfile.simple por defecto)
 docker compose build
 
 # Iniciar todos los servicios
 docker compose up -d
 
-# Ver los logs
+# Ver logs en tiempo real
 docker compose logs -f
 ```
 
+### 6. Configurar Django
+
+```bash
+# Esperar a que los servicios inicien (30 segundos)
+sleep 30
+
+# Copiar y editar configuración
+docker compose cp backend:/app/backend/gutenberg/settings/docker_settings.py.example \
+  ./backend/gutenberg/settings/docker_settings.py
+
+# Editar el archivo
+nano backend/gutenberg/settings/docker_settings.py
+```
+
+**Configuración mínima en `docker_settings.py`:**
+
+```python
+# Leer secretos desde variables de entorno
+import os
+
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'change-this-to-a-random-secret-key-in-production')
+DEBUG = False
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'backend']
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gutenberg',
+        'USER': 'gutenberg',
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'gutenberg_change_me_in_production'),
+        'HOST': 'db',
+        'PORT': '5432',
+    }
+}
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
+# Configuración de CUPS (interno al contenedor)
+CUPS_SERVERNAME = 'localhost'
+```
+
+### 7. Reiniciar servicios con la nueva configuración
+
+```bash
+# Reiniciar para aplicar la configuración
+docker compose restart backend celery
+
+# Verificar que todo funciona
+docker compose ps
+```
+
+### 8. Crear superusuario
+
+```bash
+docker compose exec backend uv run ./manage.py createsuperuser
+```
+
+## Acceso a servicios
+
+- **Aplicación web**: http://localhost:3000
+- **API Django**: http://localhost:8000
+- **Admin Django**: http://localhost:3000/admin
+- **CUPS Web Interface**: http://localhost:631 (opcional)
+
 ## Configuración de impresoras
+
+CUPS se ejecuta completamente dentro del contenedor Docker. No necesitas configurar nada en el sistema host.
 
 ### Acceder a la interfaz web de CUPS
 
-Visita: `http://localhost:631`
+Visita: http://localhost:631
 
-### Agregar una impresora desde la línea de comandos
+### Configurar desde la línea de comandos
 
 ```bash
 # Acceder al contenedor
-docker compose exec web bash
+docker compose exec backend bash
 
 # Listar impresoras disponibles
 lpinfo -v
 
-# Agregar una impresora
+# Agregar una impresora de red
 lpadmin -p MiImpresora -v socket://192.168.1.100:9100 -m everywhere
 
 # Establecer como predeterminada
 lpoptions -d MiImpresora
 
-# Probar la impresión
-echo "Prueba de impresión" | lp
+# Probar impresión
+echo "Prueba de impresión desde Gutenberg" | lp
 ```
 
-## Servicios disponibles
+### Verificar configuración de impresoras
 
-- **Web (Django)**: http://localhost:11111
-- **Nginx**: http://localhost:80
-- **CUPS**: http://localhost:631
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+```bash
+# Ver estado de impresoras
+docker compose exec backend lpstat -t
+
+# Ver trabajos en cola
+docker compose exec backend lpq -a
+
+# Probar impresión
+echo "Hola desde Docker" | docker compose exec -T backend lp
+```
 
 ## Comandos útiles
 
 ### Gestión de servicios
 
 ```bash
-# Iniciar servicios
-docker compose up -d
+# Ver estado de todos los servicios
+docker compose ps
 
-# Detener servicios
+# Ver logs de un servicio específico
+docker compose logs -f backend
+docker compose logs -f celery
+
+# Reiniciar un servicio
+docker compose restart backend
+
+# Detener todos los servicios
 docker compose down
 
-# Reiniciar un servicio específico
-docker compose restart web
-
-# Ver logs de un servicio
-docker compose logs -f celery_worker
-
-# Ver todos los servicios corriendo
-docker compose ps
+# Detener y eliminar volúmenes
+docker compose down -v
 ```
 
 ### Administración de Django
 
 ```bash
-# Crear superusuario
-docker compose exec web uv run manage.py createsuperuser
-
 # Ejecutar migraciones
-docker compose exec web uv run manage.py migrate
+docker compose exec backend uv run ./manage.py migrate
+
+# Crear superusuario
+docker compose exec backend uv run ./manage.py createsuperuser
 
 # Acceder al shell de Django
-docker compose exec web uv run manage.py shell
+docker compose exec backend uv run ./manage.py shell
+
+# Recolectar archivos estáticos
+docker compose exec backend uv run ./manage.py collectstatic
 ```
 
-### Verificar dependencias
+### Verificar dependencias de impresión
 
 ```bash
-docker compose exec web bash -c "
-  command -v libreoffice && echo '✓ LibreOffice OK' || echo '✗ LibreOffice falta'
-  command -v convert && echo '✓ ImageMagick OK' || echo '✗ ImageMagick falta'
-  command -v gs && echo '✓ Ghostscript OK' || echo '✗ Ghostscript falta'
-  command -v bwrap && echo '✓ Bubblewrap OK' || echo '✗ Bubblewrap falta'
+docker compose exec backend bash -c "
+  echo '=== Verificando dependencias ==='
+  command -v libreoffice && echo '✓ LibreOffice instalado' || echo '✗ LibreOffice falta'
+  command -v convert && echo '✓ ImageMagick instalado' || echo '✗ ImageMagick falta'
+  command -v gs && echo '✓ Ghostscript instalado' || echo '✗ Ghostscript falta'
+  command -v bwrap && echo '✓ Bubblewrap instalado' || echo '✗ Bubblewrap falta'
+  echo '=== Estado de CUPS ==='
+  lpstat -r || echo 'CUPS no disponible'
 "
 ```
 
-### Probar impresión
+## Solución de problemas
+
+### Error al construir webapp (oxc-parser)
+
+Si ves errores como "Cannot find native binding" o problemas con `oxc-parser`:
 
 ```bash
-# Probar con un archivo de texto
-docker compose exec web bash -c "echo 'Hola mundo' | lp"
+# Solución: Usar Dockerfile.simple
+# En docker-compose.yaml, cambiar:
+# dockerfile: Dockerfile
+# por:
+# dockerfile: Dockerfile.simple
 
-# Listar trabajos de impresión
-docker compose exec web lpq
-
-# Verificar estado de impresoras
-docker compose exec web lpstat -t
+# Reconstruir
+docker compose build --no-cache
 ```
 
-## Configuración de producción
+La webapp se puede construir en desarrollo o acceder directamente al backend en puerto 8000.
 
-### Variables de entorno importantes
+### Error: "lp: Unauthorized"
 
-Edita `backend/production_settings.py`:
+Si ves este error, CUPS necesita reiniciarse:
 
-```python
-# Base de datos
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gutenberg',
-        'USER': 'gutenberg',
-        'PASSWORD': 'tu_password_seguro',
-        'HOST': 'db',
-        'PORT': '5432',
-    }
-}
+```bash
+# Reiniciar el contenedor backend
+docker compose restart backend
 
-# Redis/Celery
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-
-# Seguridad
-SECRET_KEY = 'genera-una-clave-secreta-aqui'
-DEBUG = False
-ALLOWED_HOSTS = ['tu-dominio.com', 'localhost']
+# O reiniciar CUPS manualmente
+docker compose exec backend sudo cupsd
 ```
-
-### Usar uWSGI en producción
-
-Para usar uWSGI en lugar del servidor de desarrollo:
-
-1. Instalar uWSGI en el Dockerfile
-2. Crear configuración uwsgi.ini
-3. Modificar el comando en docker-entrypoint.sh
-
-## Solución de problemas
 
 ### Las impresoras no aparecen
 
 ```bash
-# Verificar que CUPS esté corriendo
-docker compose exec web cupsd -f
+# Verificar que /run/cups está montado correctamente
+docker compose exec backend ls -la /run/cups/
 
-# Verificar permisos
-docker compose exec web ls -la /var/run/cups
+# Debe mostrar cups.sock si está bien montado
+# Si ves directorios vacíos, Docker Desktop no puede montar /run
 ```
 
-### Error de conexión a la base de datos
+### Error de conexión a PostgreSQL
 
 ```bash
-# Verificar que PostgreSQL esté corriendo
+# Ver estado de la base de datos
 docker compose ps db
 
-# Ver logs de la base de datos
+# Ver logs
 docker compose logs db
+
+# Verificar conexión desde el backend
+docker compose exec backend nc -zv db 5432
 ```
 
-### Problemas con Celery
+### Celery no procesa tareas
 
 ```bash
 # Ver logs del worker
-docker compose logs -f celery_worker
+docker compose logs -f celery
 
-# Reiniciar el worker
-docker compose restart celery_worker
+# Verificar conexión a Redis
+docker compose exec celery nc -zv redis 6379
+
+# Reiniciar Celery
+docker compose restart celery
+```
+
+### Reconstruir desde cero
+
+```bash
+# Detener y eliminar todo
+docker compose down -v
+
+# Eliminar imágenes
+docker compose rm -f
+docker rmi gutenberg-docker-backend gutenberg-docker-celery
+
+# Reconstruir
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## Desarrollo local
 
-Para desarrollo, modifica `docker-compose.yaml`:
+Para desarrollo con hot-reload:
 
-```yaml
-environment:
-  - GUTENBERG_ENV=local
-  - DJANGO_SETTINGS_MODULE=gutenberg.settings.local_settings
+1. Modifica `docker_settings.py`:
+```python
+DEBUG = True
 ```
 
-Y usa el servidor de desarrollo de Nuxt:
-
+2. Usa el servidor de desarrollo de Nuxt:
 ```bash
-docker compose exec web bash
+docker compose exec backend bash
 cd /app/webapp
-export GUTENBERG_DEV_DJANGO_URL=http://localhost:11111/
+export GUTENBERG_DEV_DJANGO_URL=http://localhost:8000/
 pnpm run dev
 ```
 
 ## Respaldo y restauración
 
-### Respaldar la base de datos
+### Respaldar base de datos
 
 ```bash
-docker compose exec db pg_dump -U gutenberg gutenberg > backup.sql
+docker compose exec db pg_dump -U gutenberg gutenberg > backup-$(date +%Y%m%d).sql
 ```
 
-### Restaurar la base de datos
+### Restaurar base de datos
 
 ```bash
-docker compose exec -T db psql -U gutenberg gutenberg < backup.sql
+docker compose exec -T db psql -U gutenberg gutenberg < backup-20241217.sql
+```
+
+### Respaldar archivos multimedia
+
+```bash
+tar -czf media-backup-$(date +%Y%m%d).tar.gz data/media/
+```
+
+## Estructura de archivos final
+
+```
+gutenberg-docker/
+├── Dockerfile (opcional, con build de webapp)
+├── Dockerfile.simple (usado por defecto)
+├── docker-compose.yaml
+├── docker-entrypoint.sh
+├── nginx.conf
+├── .env.example (opcional)
+├── README-Docker.md
+├── backend/
+│   └── gutenberg/
+│       └── settings/
+│           └── docker_settings.py
+└── data/
+    ├── media/
+    └── static/
 ```
 
 ## Seguridad
 
-- Cambia todas las contraseñas predeterminadas
-- Usa HTTPS en producción (configura certificados SSL)
-- Restringe el acceso a CUPS (puerto 631)
-- Mantén Docker y las imágenes actualizadas
+- ✅ Nunca commitear los archivos en `secrets/`
+- ✅ Cambiar `ALLOWED_HOSTS` en producción
+- ✅ Usar HTTPS con certificados SSL en producción
+- ✅ Mantener Docker y las imágenes actualizadas
+- ✅ Restringir acceso a puertos expuestos con firewall
+
+## Recursos adicionales
+
+- [Documentación oficial de Gutenberg](https://github.com/KSIUJ/gutenberg)
+- [Docker Compose V2 documentation](https://docs.docker.com/compose/)
+- [CUPS documentation](https://www.cups.org/documentation.html)
 
 ## Licencia
 

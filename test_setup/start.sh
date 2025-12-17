@@ -1,10 +1,11 @@
-# Clonar y construir
-# Guardar los archivos aquí
+mkdir -p data/media data/static backend/gutenberg/settings
+
+# Construir e iniciar
 docker compose build
 docker compose up -d
 
 # Configurar impresora
-docker compose exec web lpadmin -p MiImpresora -v socket://IP:9100 -m everywhere
+docker compose exec backend lpadmin -p MiImpresora -v socket://192.168.1.100:9100 -m everywhere
 
-# Probar impresión
-#echo "Hola" | docker-compose exec -T web lp
+# Acceder a CUPS web
+# http://localhost:631
