@@ -1,0 +1,74 @@
+from .docker_base import *
+
+SECRET_KEY = 'n7+3u12_59wy_kzvecb^w^jrpi(m#(gl8^qe92kvclkd9!=-h)'
+
+# https://docs.djangoproject.com/en/5.2/ref/settings/#allowed-hosts
+# Example value: ['yoursite.example.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+DEBUG=True
+
+# https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-CSRF_TRUSTED_ORIGINS
+# Example value: ['https://yoursite.example.com']
+CSRF_TRUSTED_ORIGINS = [
+	'http://127.0.0.1:3000',
+	'http://localhost:3000'
+]
+
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+DATABASES = {
+    'default': {
+     #   'ENGINE': 'django.db.backends.postgresql',
+     #   'NAME': 'gutenberg',
+     #   'USER': 'gutenberg',
+     #   'PASSWORD': 'gutenberg_postgres_password'),
+     #   'HOST': 'db',
+     #   'PORT': '5432',
+     'ENGINE': 'django.db.backends.sqlite3',
+     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+
+CACHES = {
+    "default": {
+        #"BACKEND": "django.core.cache.backends.redis.RedisCache",
+        #"LOCATION": "redis://redis:6379",
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
+#OIDC_APP_BASE_URL = 'https://yourapp.com/'
+
+# Set user's Django groups to the roles from the access token claims.
+# Roles from the `realm_access.roles` claim will be saved as groups with the names `oidc.realm.{group_name}`.
+# Roles from the `resource_access.{client_id}.roles` claim will be saved as `oidc.client.{group_name}`.
+# If the user is in any other group with a name starting with `oidc.`, it will be removed.
+# See https://www.keycloak.org/docs/latest/server_admin/index.html#_oidc_token_role_mappings for more details.
+#OIDC_SYNC_ROLES_AS_GROUPS = True
+
+# Sets or unsets the User.is_staff and User.is_superuser fields
+# if the user's `realm_access.roles` or `resource_access.${client_id}.roles` claims contain the specified role.
+# The settings are tuples in the form `('realm', role_name)` or `('client', role_name)`.
+# Set to None to disable this feature.
+# See https://www.keycloak.org/docs/latest/server_admin/index.html#_oidc_token_role_mappings for more details.
+#OIDC_STAFF_ROLE = ('client', 'gutenberg-staff')
+#OIDC_SUPERUSER_ROLE = ('client', 'gutenberg-superuser')
+
+# Uncomment these lines to enable OpenID Connect authentication.
+# AUTHENTICATION_BACKENDS = (
+#     'django.contrib.auth.backends.ModelBackend',
+#     'kdi_oidc_django.backends.OidcAuthBackend',
+# )
+
+# Celery
+CELERY_BROKER_URL = 'redis://gutenberg-redis:6379/0'
+
+# The hostname of the CUPS server.
+# This value will be used as the value of the -f argument for cups-client commands (lp, cancel, etc.).
+# The default value of '/run/cups/cups.sock' uses a UNIX socket mounted from the host to the container,
+# instead of a TCP connection.
+CUPS_SERVERNAME = '/run/cups/cups.sock'
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
