@@ -34,9 +34,11 @@ RUN apt-get update && apt-get install -y \
 # Instalar pnpm globalmente
 RUN npm install -g pnpm
 
-# Instalar uv (gestor de paquetes Python)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Instalar uv (gestor de paquetes Python) usando pip
+RUN pip3 install --break-system-packages uv
+
+# Verificar instalación de uv
+RUN uv --version
 
 # Crear directorio de trabajo
 WORKDIR /app

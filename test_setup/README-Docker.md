@@ -5,54 +5,63 @@ Este conjunto de archivos automatiza la instalación y configuración de Gutenbe
 ## Archivos incluidos
 
 - **Dockerfile**: Imagen base con todas las dependencias
-- **docker-compose.yaml**: Orquestación de servicios
+- **docker-compose.yaml**: Orquestación de servicios (Docker Compose V2)
 - **docker-entrypoint.sh**: Script de inicialización
 - **nginx.conf**: Configuración de Nginx para producción
 
 ## Requisitos previos
 
 - Docker Engine 20.10+
-- Docker Compose 2.0+
+- Docker Compose V2 (plugin integrado en Docker)
+
+**Nota**: Este proyecto usa Docker Compose V2 (sin la clave `version:` en el archivo YAML). Si tienes Docker Desktop o Docker Engine reciente, ya incluye Compose V2.
 
 ## Instalación rápida
 
-1. **Crear la estructura de directorios:**
+1. **Verificar Docker Compose V2:**
+
+```bash
+# Debe mostrar "Docker Compose version v2.x.x"
+docker compose version
+```
+
+2. **Crear la estructura de directorios:**
 
 ```bash
 mkdir gutenberg-docker
 cd gutenberg-docker
 ```
 
-2. **Guardar los archivos:**
+3. **Guardar los archivos:**
    - Dockerfile
    - docker-compose.yaml
    - docker-entrypoint.sh
    - nginx.conf
 
-3. **Configurar la aplicación:**
+4. **Configurar la aplicación:**
 
 ```bash
 # Crear directorios para datos
 mkdir -p data/media data/static
 
 # Copiar el archivo de configuración
-docker-compose run --rm web bash -c "cd /app/backend && cp production_settings.py.example production_settings.py"
+docker compose run --rm web bash -c "cd /app/backend && cp production_settings.py.example production_settings.py"
 
 # Editar la configuración
 nano backend/production_settings.py
 ```
 
-4. **Iniciar los servicios:**
+5. **Iniciar los servicios:**
 
 ```bash
 # Construir las imágenes
-docker-compose build
+docker compose build
 
 # Iniciar todos los servicios
-docker-compose up -d
+docker compose up -d
 
 # Ver los logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Configuración de impresoras
@@ -65,7 +74,7 @@ Visita: `http://localhost:631`
 
 ```bash
 # Acceder al contenedor
-docker-compose exec web bash
+docker compose exec web bash
 
 # Listar impresoras disponibles
 lpinfo -v
@@ -94,35 +103,38 @@ echo "Prueba de impresión" | lp
 
 ```bash
 # Iniciar servicios
-docker-compose up -d
+docker compose up -d
 
 # Detener servicios
-docker-compose down
+docker compose down
 
 # Reiniciar un servicio específico
-docker-compose restart web
+docker compose restart web
 
 # Ver logs de un servicio
-docker-compose logs -f celery_worker
+docker compose logs -f celery_worker
+
+# Ver todos los servicios corriendo
+docker compose ps
 ```
 
 ### Administración de Django
 
 ```bash
 # Crear superusuario
-docker-compose exec web uv run manage.py createsuperuser
+docker compose exec web uv run manage.py createsuperuser
 
 # Ejecutar migraciones
-docker-compose exec web uv run manage.py migrate
+docker compose exec web uv run manage.py migrate
 
 # Acceder al shell de Django
-docker-compose exec web uv run manage.py shell
+docker compose exec web uv run manage.py shell
 ```
 
 ### Verificar dependencias
 
 ```bash
-docker-compose exec web bash -c "
+docker compose exec web bash -c "
   command -v libreoffice && echo '✓ LibreOffice OK' || echo '✗ LibreOffice falta'
   command -v convert && echo '✓ ImageMagick OK' || echo '✗ ImageMagick falta'
   command -v gs && echo '✓ Ghostscript OK' || echo '✗ Ghostscript falta'
@@ -134,13 +146,13 @@ docker-compose exec web bash -c "
 
 ```bash
 # Probar con un archivo de texto
-docker-compose exec web bash -c "echo 'Hola mundo' | lp"
+docker compose exec web bash -c "echo 'Hola mundo' | lp"
 
 # Listar trabajos de impresión
-docker-compose exec web lpq
+docker compose exec web lpq
 
 # Verificar estado de impresoras
-docker-compose exec web lpstat -t
+docker compose exec web lpstat -t
 ```
 
 ## Configuración de producción
@@ -185,30 +197,30 @@ Para usar uWSGI en lugar del servidor de desarrollo:
 
 ```bash
 # Verificar que CUPS esté corriendo
-docker-compose exec web cupsd -f
+docker compose exec web cupsd -f
 
 # Verificar permisos
-docker-compose exec web ls -la /var/run/cups
+docker compose exec web ls -la /var/run/cups
 ```
 
 ### Error de conexión a la base de datos
 
 ```bash
 # Verificar que PostgreSQL esté corriendo
-docker-compose ps db
+docker compose ps db
 
 # Ver logs de la base de datos
-docker-compose logs db
+docker compose logs db
 ```
 
 ### Problemas con Celery
 
 ```bash
 # Ver logs del worker
-docker-compose logs -f celery_worker
+docker compose logs -f celery_worker
 
 # Reiniciar el worker
-docker-compose restart celery_worker
+docker compose restart celery_worker
 ```
 
 ## Desarrollo local
@@ -224,7 +236,7 @@ environment:
 Y usa el servidor de desarrollo de Nuxt:
 
 ```bash
-docker-compose exec web bash
+docker compose exec web bash
 cd /app/webapp
 export GUTENBERG_DEV_DJANGO_URL=http://localhost:11111/
 pnpm run dev
@@ -235,13 +247,13 @@ pnpm run dev
 ### Respaldar la base de datos
 
 ```bash
-docker-compose exec db pg_dump -U gutenberg gutenberg > backup.sql
+docker compose exec db pg_dump -U gutenberg gutenberg > backup.sql
 ```
 
 ### Restaurar la base de datos
 
 ```bash
-docker-compose exec -T db psql -U gutenberg gutenberg < backup.sql
+docker compose exec -T db psql -U gutenberg gutenberg < backup.sql
 ```
 
 ## Seguridad

@@ -1,55 +1,115 @@
-#!/bin/bash
-set -e
+services:
+  # Servidor web Django + uWSGI
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gutenberg_web
+    ports:
+      - "11111:11111"
+      - "631:631"  # Puerto CUPS para administración
+    volumes:
+      - ./backend/production_settings.py:/app/backend/production_settings.py
+      - ./data/media:/app/media
+      - ./data/static:/app/static
+      - /var/run/cups:/var/run/cups
+      - /etc/cups:/etc/cups
+    environment:
+      - GUTENBERG_ENV=production
+      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
+    depends_on:
+      - db
+      - redis
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
+    command: web
 
-cd /app/backend
+  # Worker de Celery
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gutenberg_celery_worker
+    volumes:
+      - ./backend/production_settings.py:/app/backend/production_settings.py
+      - ./data/media:/app/media
+      - /var/run/cups:/var/run/cups
+      - /etc/cups:/etc/cups
+    environment:
+      - GUTENBERG_ENV=production
+      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
+    command: celery
 
-# Esperar a que la base de datos esté lista
-echo "Esperando a que PostgreSQL esté listo..."
-while ! nc -z db 5432; do
-  sleep 0.1
-done
-echo "PostgreSQL está listo!"
+  # Celery Beat (tareas programadas)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gutenberg_celery_beat
+    volumes:
+      - ./backend/production_settings.py:/app/backend/production_settings.py
+    environment:
+      - GUTENBERG_ENV=production
+      - DJANGO_SETTINGS_MODULE=gutenberg.settings.production_settings
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
+    command: beat
 
-# Ejecutar migraciones
-echo "Ejecutando migraciones..."
-uv run manage.py migrate --noinput
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: gutenberg_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gutenberg
+      - POSTGRES_USER=gutenberg
+      - POSTGRES_PASSWORD=gutenberg_password_change_me
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
 
-# Recolectar archivos estáticos
-echo "Recolectando archivos estáticos..."
-uv run manage.py collectstatic --noinput || true
+  # Redis para Celery
+  redis:
+    image: redis:7-alpine
+    container_name: gutenberg_redis
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
 
-# Iniciar CUPS si es necesario
-if [ ! -f /var/run/cups/cupsd.pid ]; then
-    echo "Iniciando CUPS..."
-    cupsd
-fi
+  # Nginx (opcional, para producción)
+  nginx:
+    image: nginx:alpine
+    container_name: gutenberg_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./data/static:/var/www/static:ro
+      - ./data/media:/var/www/media:ro
+    depends_on:
+      - web
+    networks:
+      - gutenberg_network
+    restart: unless-stopped
 
-# Probar el comando lp
-echo "Probando comando lp..."
-lpstat -p -d || echo "No hay impresoras configuradas todavía"
+volumes:
+  postgres_data:
 
-# Verificar comandos requeridos
-echo "Verificando comandos requeridos..."
-command -v libreoffice >/dev/null 2>&1 && echo "✓ libreoffice disponible" || echo "✗ libreoffice no disponible"
-command -v convert >/dev/null 2>&1 && echo "✓ convert (imagemagick) disponible" || echo "✗ convert no disponible"
-command -v gs >/dev/null 2>&1 && echo "✓ gs (ghostscript) disponible" || echo "✗ gs no disponible"
-command -v bwrap >/dev/null 2>&1 && echo "✓ bwrap (bubblewrap) disponible" || echo "✗ bwrap no disponible"
-
-# Ejecutar el comando apropiado según el argumento
-case "$1" in
-    web)
-        echo "Iniciando servidor web Django..."
-        exec uv run manage.py runserver 0.0.0.0:11111
-        ;;
-    celery)
-        echo "Iniciando Celery worker..."
-        exec uv run celery -A gutenberg worker -l INFO
-        ;;
-    beat)
-        echo "Iniciando Celery beat..."
-        exec uv run celery -A gutenberg beat -l INFO
-        ;;
-    *)
-        exec "$@"
-        ;;
-esac
+networks:
+  gutenberg_network:
+    driver: bridge

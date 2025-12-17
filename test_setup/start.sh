@@ -1,11 +1,10 @@
 # Clonar y construir
-mkdir gutenberg-docker && cd gutenberg-docker
 # Guardar los archivos aquí
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 
 # Configurar impresora
-docker-compose exec web lpadmin -p MiImpresora -v socket://IP:9100 -m everywhere
+docker compose exec web lpadmin -p MiImpresora -v socket://IP:9100 -m everywhere
 
 # Probar impresión
-echo "Hola" | docker-compose exec -T web lp
+#echo "Hola" | docker-compose exec -T web lp
