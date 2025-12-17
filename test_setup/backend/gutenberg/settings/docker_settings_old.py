@@ -1,24 +1,38 @@
-from .base import *
+from .docker_base import *
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'n7+3u12_59wy_kzvecb^w^jrpi(m#(gl8^qe92kvclkd9!=-h)'
+SECRET_KEY = 'gutenberg_django_secret_key'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# https://docs.djangoproject.com/en/5.2/ref/settings/#allowed-hosts
+# Example value: ['yoursite.example.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+# https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-CSRF_TRUSTED_ORIGINS
+# Example value: ['https://yoursite.example.com']
+CSRF_TRUSTED_ORIGINS = [
+	'http://127.0.0.1:3000',
+	'http://localhost:3000'
+]
+
+# Admin e-mail addresses to send messages to when errors occur
+ADMINS = []
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gutenberg',
+        'USER': 'gutenberg',
+        'PASSWORD': read_secret('gutenberg_postgres_password'),
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379",
+        "LOCATION": "redis://redis:6379",
     }
 }
 
@@ -46,7 +60,10 @@ OIDC_SUPERUSER_ROLE = ('client', 'gutenberg-superuser')
 # )
 
 # Celery
-CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_BROKER_URL = 'redis://redis:6379'
 
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# The hostname of the CUPS server.
+# This value will be used as the value of the -f argument for cups-client commands (lp, cancel, etc.).
+# The default value of '/run/cups/cups.sock' uses a UNIX socket mounted from the host to the container,
+# instead of a TCP connection.
+CUPS_SERVERNAME = '/run/cups/cups.sock'
