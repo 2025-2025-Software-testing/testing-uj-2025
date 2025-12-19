@@ -54,5 +54,8 @@ else
     exit 1
 fi
 
+echo ""
+echo "============================================================================="
+echo ""
 echo "Configuration completed successfully"
 echo "In order to delete the printer run \`sudo apt purge printer-driver-cups-pdf\`"
